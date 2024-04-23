@@ -13,6 +13,13 @@ public class Sound1 extends PApplet {
     AudioPlayer ap;
     AudioBuffer b;
 
+    int maxCircles = 40; // Maximum number of circles
+    int numCircles = 20;    // Initial number of circles
+    float[] circleX;
+    float[] circleY;
+    float[] speedX;
+    float[] speedY;
+
     @Override
     public void settings() {
         size(1200, 800);
@@ -24,104 +31,85 @@ public class Sound1 extends PApplet {
         ap = m.loadFile("BodyGroove_MixMcVersion.mp3");
         ap.play();
         b = ap.mix;
-    }
 
-    float lerpedAvg = 0;
-    int countStickman = 1;
+        circleX = new float[maxCircles];
+        circleY = new float[maxCircles];
+        speedX = new float[maxCircles];
+        speedY = new float[maxCircles];
+
+        // Initialize circle positions and speeds
+        for (int i = 0; i < numCircles; i++) {
+            circleX[i] = random(width);
+            circleY[i] = random(-height, 0); // Randomize starting position above the screen
+            speedX[i] = random(-0.5f, 0.5f);      // Adjusted speed
+            speedY[i] = random(-0.5f, -0.2f);  // Adjusted speed and adjusted for upward motion
+        }
+    }
 
     @Override
     public void draw() {
-        colorMode(HSB);
-        background(0);
-        stroke(255);
-        
-        float centreX = width / 2;
-        float centreY = height / 2;
+        // Background color to mimic underwater environment
+        background(10, 70, 200); // Dark blue
 
-        int sideSize = 300;
-        float sideSizeLeftMidX = sideSize /2;
-        float sideSizeRightMidX = width - (sideSize /2);
+        // Draw and update existing bubbles
+        for (int i = 0; i < numCircles; i++) {
+            // Update circle position
+            circleX[i] += speedX[i];
+            circleY[i] += speedY[i];
 
-        int middleSize = width - sideSize * 2;
+            // Check boundaries and reset if out of screen
+            if (circleY[i] < -60) {
+                circleX[i] = random(width);
+                circleY[i] = height;
+            }
 
-        float blueBoxHeight = height/3;
-
-        // for(int i = 0 ; i < b.size() ; i ++)
-        // {
-        //     float hue = map(i, 0, b.size() , 0, 256);
-        //     stroke(hue, 255, 255);
-        //     noFill();
-        // }
-
-        
-
-        float sum = 0;
-        for(int i = 0; i < b.size(); i++) {
-            sum += abs(b.get(i));
-        }
-        float avgAmplitude = sum / b.size();
-        System.out.println(avgAmplitude + '\n');
-
-        // if(avgAmplitude > 0.01 && avgAmplitude < 0.015){
-        //     System.out.println("true");
-        //     stroke(255);
-        //     circle(centreX, centreY, 100);
-        // }
-        
-        float circleSize = map(avgAmplitude, 0, 1, 0, min(width, height));
-
-        for (int i = 0; i < 10; i++) {
-            fill(0);
-            stroke(255);
-            circle(sideSizeLeftMidX, centreY, circleSize-10*i);
-            circle(sideSizeRightMidX, centreY, circleSize-10*i);
-
-            circle(sideSizeLeftMidX, centreY + (centreY/2), circleSize-10*i);
-            circle(sideSizeRightMidX, centreY + (centreY/2), circleSize-10*i);
-
-            circle(sideSizeLeftMidX, centreY - (centreY/2), circleSize-10*i);
-            circle(sideSizeRightMidX, centreY - (centreY/2), circleSize-10*i);
+            // Draw bubble-like circles with semi-transparency
+            noStroke();
+            fill(150, 200, 255, 150); // Light blue with transparency
+            ellipse(circleX[i], circleY[i], 60, 60); // Larger circular shape
         }
 
-        //stickman time
-        //stickman dance moves : 0 = Start pose, 1 = flex left, 2 = flex both, 3 = reset
-        //arm length is half an arm ie. from shoulder to elbow and from elbow to hand
-        float armLength = middleSize/6;
-        float headRadius = height/14;
-        float bodyLength = armLength*2;
-        float legLength = bodyLength;
-        float bodyStart = blueBoxHeight+(2*headRadius);
-        float bodyEnd = bodyStart + bodyLength;
-
-        //head
-        circle(centreX ,blueBoxHeight+headRadius , headRadius*2);
-        //body
-        line(centreX, bodyStart, centreX, bodyEnd);
-        //upper arm
-        line(centreX, bodyStart, centreX + armLength, bodyStart);
-        line(centreX, bodyStart, centreX - armLength, bodyStart);
-        //legs
-        line(centreX, bodyEnd, centreX + armLength, bodyEnd + legLength);
-        line(centreX, bodyEnd, centreX - armLength, bodyEnd + legLength);
-
-         
-
-        //lower arm
-        if(countStickman == 0){
-            line(centreX + armLength, bodyStart, centreX - armLength*2, bodyStart);
-            line(centreX + armLength, bodyStart, centreX + armLength*2, bodyStart);
+        // Add new bubbles if the number is less than the maximum
+        if (numCircles < maxCircles) {
+            circleX[numCircles] = random(width);
+            circleY[numCircles] = random(-height, 0); // Randomize starting position above the screen
+            speedX[numCircles] = random(-0.5f, 0.5f);       // Adjusted speed
+            speedY[numCircles] = random(-0.5f, -0.2f);   // Adjusted speed and adjusted for upward motion
+            numCircles++; // Increment the count of circles
         }
-        if(countStickman == 1){
-            line(centreX - armLength, bodyStart, centreX - armLength, bodyStart - armLength);
-            line(centreX + armLength, bodyStart, centreX + armLength, bodyStart - armLength);
-            countStickman = 0;
-        }
-        
-        if(avgAmplitude > .01){
-                    countStickman = countStickman + 1;
-                    System.out.println("true");
-                }
     }
 
-    float lerped = 0;
+    @Override
+    public void mousePressed() {
+        // Iterate through bubbles to check for clicks
+        for (int i = 0; i < numCircles; i++) {
+            // Calculate distance between mouse click and bubble center
+            float distance = dist(mouseX, mouseY, circleX[i], circleY[i]);
+            
+            // If click is within bubble radius, remove bubble
+            if (distance < 30) {
+                // Remove bubble from arrays
+                removeBubble(i);
+                break; // Exit loop once a bubble is popped
+            }
+        }
+    }
+
+    // Method to remove popped bubble from arrays
+    void removeBubble(int index) {
+        // Shift bubbles after removed bubble to fill the gap
+        for (int i = index; i < numCircles - 1; i++) {
+            circleX[i] = circleX[i + 1];
+            circleY[i] = circleY[i + 1];
+            speedX[i] = speedX[i + 1];
+            speedY[i] = speedY[i + 1];
+        }
+        
+        // Decrement number of bubbles
+        numCircles--;
+    }
+
+    public static void main(String[] args) {
+        PApplet.main("ie.tudublin.Sound1");
+    }
 }
